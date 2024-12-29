@@ -1,0 +1,491 @@
+#!/bin/bash
+
+# Reset and color codes for styling output
+RESET='\033[0m' # Color Off
+CYAN='\033[0;36m'
+YELLOW='\033[0;33m'
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+
+# Usage display function
+function display_usage() {
+  echo -e "${CYAN}Usage:${RESET}"
+  echo -e "  $0 <option> <argument>"
+  echo
+  echo -e "${CYAN}Description:${RESET}"
+  echo -e "  This script provides tools for managing API resources and generating applications. Use the specified option to perform actions."
+  echo
+  echo -e "${CYAN}Options:${RESET}"
+  echo -e "  ${YELLOW}-n${RESET}  Generate a new full application. Requires the application name as an argument."
+  echo -e "  ${YELLOW}-d${RESET}  Generate a new domain directory with boilerplate files. Requires the domain path as an argument."
+  echo
+  echo -e "${CYAN}Parameters:${RESET}"
+  echo -e "  ${YELLOW}<app-name>${RESET} \t The name of the new application to generate."
+  echo -e "  ${YELLOW}<domain-path>${RESET}  The filesystem path to the domain directory."
+  # echo -e "\t\t For example: ${YELLOW}src/domains/users${RESET}, where 'users' is the domain name."
+  echo
+  echo -e "${CYAN}Examples:${RESET}"
+  echo -e "  $0 -n ${YELLOW}my-app${RESET}"
+  echo -e "  $0 -d ${YELLOW}src/domains/users${RESET}"
+  echo
+  exit 1
+}
+
+# Function to create a directory if it doesn’t exist
+function create_directory() {
+  local path="$1"
+
+  if [ ! -d "$path" ]; then
+    mkdir -p "$path"
+
+    echo -e "${GREEN}Directory '$path' created.${RESET}"
+  else
+    echo -e "${YELLOW}Directory '$path' already exists.${RESET}"
+  fi
+}
+
+# Function to create a file if it doesn’t exist
+function create_file() {
+  local filename="$1"
+
+  if [ -f "$filename" ]; then
+    echo -e "${YELLOW}File '$filename' already exists. Skipping.${RESET}"
+
+    return 1 # File exists, return false (1 in Bash)
+  fi
+
+  touch "$filename"
+
+  echo -e "${GREEN}File '$filename' created.${RESET}"
+
+  return 0 # File does not exist, return true (0 in Bash)
+}
+
+# Function to check if a file contains a specific text
+function file_contains_text() {
+  local filename="$1"
+  local search_text="$2"
+
+  # Check if the file contains the text
+  if grep -qF "$search_text" "$filename"; then
+    return 0 # Text found
+  else
+    return 1 # Text not found
+  fi
+}
+
+# Function to populate index.js with exports
+function populate_index() {
+  local path="$1/index.js"
+  local domain="$2"
+
+  create_file "$path"
+
+  if [ $? -eq 0 ]; then
+    {
+      echo "export * from './${domain}.controller.js';"
+      echo "export * from './${domain}.model.js';"
+      echo "export * from './${domain}.routes.js';"
+      echo "export * from './${domain}.schema.js';"
+      echo "export * from './${domain}.validation.js';"
+    } >"$path"
+  fi
+}
+
+function populate_controller() {
+  local path="$1"
+  local domain="$2"
+  local filename="$path/${domain}.controller.js"
+
+  create_file "$filename"
+
+  if [ $? -eq 0 ]; then
+    {
+      echo "import { baseController } from '../../common/index.js'"
+      echo "import { model } from './${domain}.model.js'"
+      echo ""
+      echo "export const controller = baseController(model);"
+    } >"$filename"
+  fi
+}
+
+function populate_model() {
+  local path="$1"
+  local domain="$2"
+  local filename="$path/${domain}.model.js"
+
+  create_file "$filename"
+
+  if [ $? -eq 0 ]; then
+    {
+      echo "import { baseModel } from '../../common/index.js';"
+      echo "import { ${domain} } from './${domain}.schema.js';"
+      echo ""
+      echo "export const model = baseModel(${domain});"
+    } >"$filename"
+  fi
+}
+
+function populate_routes() {
+  local path="$1"
+  local domain="$2"
+  local filename="$path/${domain}.routes.js"
+  local route_path="./${domain}/${domain}.routes.js"
+  local domain_schema_name
+  local routes_filename
+
+  routes_filename="$(dirname "${path}")/routes.js"
+  domain_schema_name=$(capitalize "$domain")
+
+  create_file "$filename"
+
+  if [ $? -eq 0 ]; then
+    {
+      echo " import { controller } from './${domain}.controller.js'"
+      echo " import { validations } from './${domain}.validation.js'"
+      echo ""
+      echo " export const routes = async (app) => {"
+      echo "   app.post("
+      echo "     '/${domain}',"
+      echo "     { schema: { ...validations.create, tags: ['${domain_schema_name}'] } },"
+      echo "     controller.create"
+      echo "   )"
+      echo " "
+      echo "   app.get("
+      echo "     '/${domain}',"
+      echo "     { schema: { ...validations.getAll, tags: ['${domain_schema_name}'] } },"
+      echo "     controller.getAll"
+      echo "   )"
+      echo ""
+      echo "   app.get("
+      echo "     '/${domain}/:id',"
+      echo "     { schema: { ...validations.getById, tags: ['${domain_schema_name}'] } },"
+      echo "     controller.getById"
+      echo "   )"
+      echo ""
+      echo "   app.delete("
+      echo "     '/${domain}/:id',"
+      echo "     { schema: { ...validations.delete, tags: ['${domain_schema_name}'] } },"
+      echo "     controller.deleteById"
+      echo "   )"
+      echo " "
+      echo "   app.patch("
+      echo "     '/${domain}/:id',"
+      echo "     { schema: { ...validations.patch, tags: ['${domain_schema_name}'] } },"
+      echo "     controller.patch"
+      echo "   )"
+      echo ""
+      echo "   app.put("
+      echo "     '/${domain}/:id',"
+      echo "     { schema: { ...validations.put, tags: ['${domain_schema_name}'] } },"
+      echo "     controller.put"
+      echo "   )"
+      echo " }"
+    } >"$filename"
+  fi
+
+  create_file "$routes_filename" "$routes_filename"
+
+  file_contains_text "$routes_filename" "$route_path"
+
+  if [ $? -eq 1 ]; then
+    echo "export * from '${route_path}'" >>"$routes_filename"
+  fi
+}
+
+# TODO: create an option to define the database driver (MySQL, Postgres, etc)
+function populate_schema() {
+  local path="$1"
+  local domain="$2"
+  local filename="$path/${domain}.schema.js"
+  local schema_path="./${domain}/${domain}.schema.js"
+  local domain_schema_name
+  local schemas_filename
+
+  schemas_filename="$(dirname "${path}")/schemas.js"
+  # domain_schema_name=$(capitalize "$domain")
+  domain_schema_name=$(singularize $(capitalize "$domain"))
+
+  create_file "$filename"
+
+  if [ $? -eq 0 ]; then
+    {
+      echo "import {"
+      echo "  pgTable,"
+      echo "  timestamp,"
+      echo "  uuid"
+      echo "} from 'drizzle-orm/pg-core'"
+      echo ""
+      echo "import { createSelectSchema } from '../../common/schema/inferSchema.js'"
+      echo "import { omit } from '../../common/schema/omit.js'"
+      echo "import { partial } from '../../common/schema/partial.js'"
+      echo "import { pick } from '../../common/schema/pick.js'"
+      echo "import { registerSchema } from '../../common/schema/registry.js'"
+      echo ""
+      echo "export const ${domain} = pgTable('${domain}', {"
+      echo "  id: uuid('id').primaryKey().defaultRandom().notNull(),"
+      echo "  created_at: timestamp('created_at', { precision: 6, withTimezone: true })"
+      echo "    .defaultNow()"
+      echo "    .notNull(),"
+      echo "  updated_at: timestamp('updated_at', { precision: 6, withTimezone: true })"
+      echo "    .defaultNow()"
+      echo "    .notNull()"
+      echo "})"
+      echo ""
+      echo "export const Select${domain_schema_name}Schema = partial(omit("
+      echo "  createSelectSchema(${domain_schema_name}),"
+      echo "  ['password']"
+      echo "))"
+      echo ""
+      echo "export const Create${domain_schema_name}Schema = omit(Select${domain_schema_name}Schema, ["
+      echo "  'id',"
+      echo "  'created_at',"
+      echo "  'updated_at'"
+      echo "])"
+      echo ""
+      echo "const ${domain_schema_name}Schema = omit(Select${domain_schema_name}Schema, ["
+      echo "  'password'"
+      echo "])"
+      echo ""
+      echo "export const Id${domain_schema_name}Schema = pick(Select${domain_schema_name}Schema, ['id'])"
+      echo "export const Update${domain_schema_name}Schema = partial(Create${domain_schema_name}Schema)"
+      echo ""
+      echo "registerSchema('${domain}', '${domain_schema_name}', ${domain_schema_name}Schema)"
+    } >"$filename"
+  fi
+
+  create_file "$schemas_filename"
+
+  file_contains_text "$schemas_filename" "$schema_path"
+
+  if [ $? -eq 1 ]; then
+    echo "export * from '${schema_path}'" >>"$schemas_filename"
+  fi
+}
+
+function populate_validation() {
+  local path="$1"
+  local domain="$2"
+  local filename="$path/${domain}.validation.js"
+  local domain_schema_name
+
+  domain_schema_name=$(singularize $(capitalize "$domain"))
+
+  create_file "$filename"
+
+  if [ $? -eq 0 ]; then
+    {
+      echo "import {"
+      echo "  REQUEST_SEGMENTS,"
+      echo "  createAllResponseSchema,"
+      echo "  createByIdResponseSchema,"
+      echo "  createDeleteByIdResponseSchema,"
+      echo "  createQuerySchema,"
+      echo "  createResponseSchema"
+      echo "} from '../../common/index.js'"
+      echo "import {"
+      echo "  Create${domain_schema_name}Schema,"
+      echo "  Id${domain_schema_name}Schema,"
+      echo "  Update${domain_schema_name}Schema,"
+      echo "  Select${domain_schema_name}Schema"
+      echo "} from './index.js'"
+      echo ""
+      echo "export const validations = {"
+      echo "  // POST /${domain}"
+      echo "  create: {"
+      echo "    [REQUEST_SEGMENTS.BODY]: Create${domain_schema_name}Schema,"
+      echo "    [REQUEST_SEGMENTS.RESPONSE]: createResponseSchema({ \$ref: '${domain_schema_name}' })"
+      echo "  },"
+      echo ""
+      echo "  // DELETE /${domain}/:id"
+      echo "  delete: {"
+      echo "    [REQUEST_SEGMENTS.PARAMS]: Id${domain_schema_name}Schema,"
+      echo "    [REQUEST_SEGMENTS.RESPONSE]: createDeleteByIdResponseSchema()"
+      echo "  },"
+      echo ""
+      echo "  // GET /${domain}"
+      echo "  getAll: {"
+      echo "    [REQUEST_SEGMENTS.QUERY]: createQuerySchema(),"
+      echo "    [REQUEST_SEGMENTS.RESPONSE]: createAllResponseSchema(Select${domain_schema_name}Schema)"
+      echo "  },"
+      echo ""
+      echo "  // GET /${domain}/:id"
+      echo "  getById: {"
+      echo "    [REQUEST_SEGMENTS.PARAMS]: Id${domain_schema_name}Schema,"
+      echo "    [REQUEST_SEGMENTS.RESPONSE]: createByIdResponseSchema({ \$ref: '${domain_schema_name}' })"
+      echo "  },"
+      echo ""
+      echo "  // PATCH /${domain}/:id"
+      echo "  patch: {"
+      echo "    [REQUEST_SEGMENTS.PARAMS]: Id${domain_schema_name}Schema,"
+      echo "    [REQUEST_SEGMENTS.BODY]: Update${domain_schema_name}Schema,"
+      echo "    [REQUEST_SEGMENTS.RESPONSE]: createByIdResponseSchema({ \$ref: '${domain_schema_name}' })"
+      echo "  },"
+      echo ""
+      echo "  // PUT /${domain}/:id"
+      echo "  put: {"
+      echo "    [REQUEST_SEGMENTS.PARAMS]: Id${domain_schema_name}Schema,"
+      echo "    [REQUEST_SEGMENTS.BODY]: Create${domain_schema_name}Schema,"
+      echo "    [REQUEST_SEGMENTS.RESPONSE]: createByIdResponseSchema({ \$ref: '${domain_schema_name}' })"
+      echo "  }"
+      echo "}"
+    } >"$filename"
+  fi
+}
+
+# Function to populate each specific file with default content
+function populate_files() {
+  local path="$1"
+  local domain="$2"
+
+  # Populate controller file
+  populate_controller "$path" "$domain"
+
+  # Populate model file
+  populate_model "$path" "$domain"
+
+  # Populate routes file
+  populate_routes "$path" "$domain"
+
+  # Populate schema file
+  populate_schema "$path" "$domain"
+
+  # Populate validation file
+  populate_validation "$path" "$domain"
+}
+
+function create_application() {
+  local app_name="$1"
+}
+
+# Main function to coordinate file creation and population
+function generate_domain() {
+  local domain_path="$1"
+  local domain_name
+
+  domain_name=$(basename "$domain_path")
+
+  # Check if the directory exists, create if not
+  if [ ! -d "$domain_path" ]; then
+    mkdir -p "$domain_path"
+    echo -e "${GREEN}Directory '$domain_path' created.${RESET}"
+  else
+    echo -e "${YELLOW}Directory '$domain_path' already exists.${RESET}"
+  fi
+
+  populate_index "$domain_path" "$domain_name"
+  populate_files "$domain_path" "$domain_name"
+
+  echo
+  echo -e "${GREEN}All files generated successfully in $domain_path.${RESET}"
+}
+
+# Utility functions
+# Function to capitalize the first letter of a string
+function capitalize() {
+  echo "${1^}"
+}
+
+pluralize() {
+  local word="$1"
+  local count="${2:-2}" # Default to plural if count is not 1
+
+  if [[ $count -eq 1 ]]; then
+    # If count is 1, return the word as-is
+    echo "$word"
+    return
+  fi
+
+  # Irregular singular to plural mappings
+  case "$word" in
+  man) echo "men" ;;
+  woman) echo "women" ;;
+  child) echo "children" ;;
+  foot) echo "feet" ;;
+  tooth) echo "teeth" ;;
+  goose) echo "geese" ;;
+  mouse) echo "mice" ;;
+  ox) echo "oxen" ;;
+  datum) echo "data" ;;
+  person) echo "people" ;;
+  *) # General pluralization rules
+    if [[ "$word" =~ [sxz]$ ]] || [[ "$word" =~ [cs]h$ ]]; then
+      # Words ending in -s, -x, -z, -sh, -ch -> add -es
+      echo "${word}es"
+    elif [[ "$word" =~ [aeiou]y$ ]]; then
+      # Words ending in vowel + y -> add -s
+      echo "${word}s"
+    elif [[ "$word" =~ y$ ]]; then
+      # Words ending in consonant + y -> replace -y with -ies
+      echo "${word%y}ies"
+    elif [[ "$word" =~ f$ ]]; then
+      # Words ending in -f -> replace with -ves (e.g., wolf -> wolves)
+      echo "${word%f}ves"
+    elif [[ "$word" =~ fe$ ]]; then
+      # Words ending in -fe -> replace with -ves (e.g., knife -> knives)
+      echo "${word%fe}ves"
+    else
+      # Default: Add -s
+      echo "${word}s"
+    fi
+    ;;
+  esac
+}
+
+singularize() {
+    local word="$1"
+
+    # Irregular plural to singular mappings
+    case "$word" in
+        men) echo "man" ;;
+        women) echo "woman" ;;
+        children) echo "child" ;;
+        feet) echo "foot" ;;
+        teeth) echo "tooth" ;;
+        geese) echo "goose" ;;
+        mice) echo "mouse" ;;
+        oxen) echo "ox" ;;
+        data) echo "datum" ;;
+        people) echo "person" ;;
+        *) # General singularization rules
+            if [[ "$word" =~ ies$ ]]; then
+                # Words ending in -ies -> replace with -y
+                echo "${word%ies}y"
+            elif [[ "$word" =~ (ches|shes|xes|zes|ses)$ ]]; then
+                # Words ending in -ches, -shes, -xes, -zes, -ses -> remove -es
+                echo "${word%es}"
+            elif [[ "$word" =~ s$ ]] || ! [[ "$word" =~ es$ ]]; then
+                # Words ending in -s but not -es -> remove -s
+                echo "${word%s}"
+            else
+                # If no rule matches, return the word as-is
+                echo "If no rule matches, return the word as-is"
+                echo "$word"
+            fi
+            ;;
+    esac
+}
+
+# Parse options and arguments
+if [ $# -lt 2 ]; then
+  display_usage
+fi
+
+option="$1"
+# domain_path="$2"
+
+case "$option" in
+-d)
+  generate_domain "$2"
+  # echo "Generate Domain"
+  ;;
+-n)
+  # create_application "$2"
+  echo "Create Application"
+  ;;
+*)
+  echo -e "${RED}Error:${RESET} Invalid option '$option'."
+  echo -e "Try ${YELLOW}'$0'${RESET} for more information."
+
+  ;;
+esac

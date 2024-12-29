@@ -1,0 +1,51 @@
+#!/bin/bash
+
+#!/bin/bash
+
+singularize() {
+    local word="$1"
+
+    # Irregular plural to singular mappings
+    case "$word" in
+        men) echo "man" ;;
+        women) echo "woman" ;;
+        children) echo "child" ;;
+        feet) echo "foot" ;;
+        teeth) echo "tooth" ;;
+        geese) echo "goose" ;;
+        mice) echo "mouse" ;;
+        oxen) echo "ox" ;;
+        data) echo "datum" ;;
+        people) echo "person" ;;
+        *) # General singularization rules
+            if [[ "$word" =~ ies$ ]]; then
+                # Words ending in -ies -> replace with -y
+                echo "${word%ies}y"
+            elif [[ "$word" =~ (ches|shes|xes|zes|ses)$ ]]; then
+                # Words ending in -ches, -shes, -xes, -zes, -ses -> remove -es
+                echo "${word%es}"
+            elif [[ "$word" =~ s$ ]] || ! [[ "$word" =~ es$ ]]; then
+                # Words ending in -s but not -es -> remove -s
+                echo "${word%s}"
+            else
+                # If no rule matches, return the word as-is
+                echo "If no rule matches, return the word as-is"
+                echo "$word"
+            fi
+            ;;
+    esac
+}
+
+# Usage examples:
+echo "$(singularize "foxes")"      # fox
+echo "$(singularize "babies")"     # baby
+echo "$(singularize "children")"   # child
+echo "$(singularize "data")"       # datum
+echo "$(singularize "cats")"       # cat
+echo "$(singularize "profiles")"   # profile
+echo "$(singularize "people")"     # person
+
+
+word="$1"
+# echo $word
+# echo $(singularize "$word")

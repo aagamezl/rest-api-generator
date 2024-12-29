@@ -1,0 +1,57 @@
+#!/bin/bash
+
+pluralize() {
+  local word="$1"
+  local count="${2:-2}" # Default to plural if count is not 1
+
+  if [[ $count -eq 1 ]]; then
+    # If count is 1, return the word as-is
+    echo "$word"
+    return
+  fi
+
+  # Irregular singular to plural mappings
+  case "$word" in
+  man) echo "men" ;;
+  woman) echo "women" ;;
+  child) echo "children" ;;
+  foot) echo "feet" ;;
+  tooth) echo "teeth" ;;
+  goose) echo "geese" ;;
+  mouse) echo "mice" ;;
+  ox) echo "oxen" ;;
+  datum) echo "data" ;;
+  person) echo "people" ;;
+  *) # General pluralization rules
+    if [[ "$word" =~ [sxz]$ ]] || [[ "$word" =~ [cs]h$ ]]; then
+      # Words ending in -s, -x, -z, -sh, -ch -> add -es
+      echo "${word}es"
+    elif [[ "$word" =~ [aeiou]y$ ]]; then
+      # Words ending in vowel + y -> add -s
+      echo "${word}s"
+    elif [[ "$word" =~ y$ ]]; then
+      # Words ending in consonant + y -> replace -y with -ies
+      echo "${word%y}ies"
+    elif [[ "$word" =~ f$ ]]; then
+      # Words ending in -f -> replace with -ves (e.g., wolf -> wolves)
+      echo "${word%f}ves"
+    elif [[ "$word" =~ fe$ ]]; then
+      # Words ending in -fe -> replace with -ves (e.g., knife -> knives)
+      echo "${word%fe}ves"
+    else
+      # Default: Add -s
+      echo "${word}s"
+    fi
+    ;;
+  esac
+}
+
+# Usage examples:
+echo "$(pluralize "fox")"     # foxes
+echo "$(pluralize "baby")"    # babies
+echo "$(pluralize "child")"   # children
+echo "$(pluralize "datum")"   # data
+echo "$(pluralize "wolf")"    # wolves
+echo "$(pluralize "knife")"   # knives
+echo "$(pluralize "profile")" # profiles
+echo "$(pluralize "person")"  # people
