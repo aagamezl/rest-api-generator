@@ -7,30 +7,7 @@ YELLOW='\033[0;33m'
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 
-# Usage display function
-function display_usage() {
-  echo -e "${CYAN}Usage:${RESET}"
-  echo -e "  $0 <option> <argument>"
-  echo
-  echo -e "${CYAN}Description:${RESET}"
-  echo -e "  This script provides tools for managing API resources and generating applications. Use the specified option to perform actions."
-  echo
-  echo -e "${CYAN}Options:${RESET}"
-  echo -e "  ${YELLOW}-n${RESET}  Generate a new full application. Requires the application name as an argument."
-  echo -e "  ${YELLOW}-d${RESET}  Generate a new domain directory with boilerplate files. Requires the domain path as an argument."
-  echo
-  echo -e "${CYAN}Parameters:${RESET}"
-  echo -e "  ${YELLOW}<app-name>${RESET} \t The name of the new application to generate."
-  echo -e "  ${YELLOW}<domain-path>${RESET}  The filesystem path to the domain directory."
-  # echo -e "\t\t For example: ${YELLOW}src/domains/users${RESET}, where 'users' is the domain name."
-  echo
-  echo -e "${CYAN}Examples:${RESET}"
-  echo -e "  $0 -n ${YELLOW}my-app${RESET}"
-  echo -e "  $0 -d ${YELLOW}src/domains/users${RESET}"
-  echo
-  exit 1
-}
-
+#--------------------------- START UTILITY FUNCTION ----------------------------
 # Function to create a directory if it doesn’t exist
 function create_directory() {
   local path="$1"
@@ -61,6 +38,214 @@ function create_file() {
   return 0 # File does not exist, return true (0 in Bash)
 }
 
+function capitalize() {
+  echo "${1^}"
+}
+
+function pluralize() {
+  local word="$1"
+
+  # List of uncountable nouns
+  local -a uncountable=(
+    aircraft audio bison cattle chassis cod compensation coreopsis data deer
+    education emoji equipment evidence feedback firmware fish furniture gold
+    hardware hovercraft information jedi kin knowledge love metadata money moose
+    news nutrition offspring pike plankton pokemon police rain recommended related
+    rice salmon series sheep shrimp software spacecraft species sugar swine traffic
+    trout tuna wheat wood you
+  )
+
+  # Map of irregular singular to plural forms
+  declare -A irregular_patterns=(
+    ["move"]="moves"
+    ["foot"]="feet"
+    ["goose"]="geese"
+    ["sex"]="sexes"
+    ["child"]="children"
+    ["man"]="men"
+    ["tooth"]="teeth"
+    ["person"]="people"
+  )
+
+  # Map of regular patterns for pluralization
+  declare -A plural_patterns=(
+    ["(quiz)$"]="\\1zes"
+    ["^(ox)$"]="\\1en"
+    ["([m|l])ouse$"]="\\1ice"
+    ["(matr|vert|ind)ix|ex$"]="\\1ices"
+    ["(x|ch|ss|sh)$"]="\\1es"
+    ["([^aeiouy]|qu)y$"]="\\1ies"
+    ["(hive)$"]="\\1s"
+    ["(?:([^f])fe|([lr])f)$"]="\\1\\2ves"
+    ["(shea|lea|loa|thie)f$"]="\\1ves"
+    ["sis$"]="ses"
+    ["([ti])um$"]="\\1a"
+    ["(tomat|potat|ech|her|vet)o$"]="\\1oes"
+    ["(bu)s$"]="\\1ses"
+    ["(alias)$"]="\\1es"
+    ["(octop)us$"]="\\1i"
+    ["(ax|test)is$"]="\\1es"
+    ["(us)$"]="\\1es"
+    ["([^s]+)$"]="\\1s"
+  )
+
+  # Check if the word is uncountable
+  for uncountable_word in "${uncountable[@]}"; do
+    if [[ "${word,,}" == "$uncountable_word" ]]; then
+      echo "$word"
+      return
+    fi
+  done
+
+  # Check for irregular singular forms
+  for singular in "${!irregular_patterns[@]}"; do
+    local pattern="^${singular}$"
+    if [[ "$word" =~ $pattern ]]; then
+      echo "${irregular_patterns[$singular]}"
+      return
+    fi
+  done
+
+  # Check for matches using regular patterns
+  for reg in "${!plural_patterns[@]}"; do
+    if [[ "$word" =~ $reg ]]; then
+      echo "$(echo "$word" | sed -E "s/$reg/${plural_patterns[$reg]}/")"
+      return
+    fi
+  done
+
+  # Return the original word if no patterns match
+  echo "$word"
+}
+
+function singularize() {
+  local word="$1"
+
+  # Map of regular patterns for singularization
+  declare -A singular_patterns=(
+    ["(quiz)zes$"]="\\1"
+    ["(matr)ices$"]="\\1ix"
+    ["(vert|ind)ices$"]="\\1ex"
+    ["^(ox)en$"]="\\1"
+    ["(alias)es$"]="\\1"
+    ["(octop|vir)i$"]="\\1us"
+    ["(cris|ax|test)es$"]="\\1is"
+    ["(shoe)s$"]="\\1"
+    ["(o)es$"]="\\1"
+    ["(bus)es$"]="\\1"
+    ["([m|l])ice$"]="\\1ouse"
+    ["(x|ch|ss|sh)es$"]="\\1"
+    ["(m)ovies$"]="\\1ovie"
+    ["(s)eries$"]="\\1eries"
+    ["([^aeiouy]|qu)ies$"]="\\1y"
+    ["([lr])ves$"]="\\1f"
+    ["(tive)s$"]="\\1"
+    ["(hive)s$"]="\\1"
+    ["(li|wi|kni)ves$"]="\\1fe"
+    ["(shea|loa|lea|thie)ves$"]="\\1f"
+    ["(^analy)ses$"]="\\1sis"
+    ["((a)naly|(b)a|(d)iagno|(p)arenthe|(p)rogno|(s)ynop|(t)he)ses$"]="\\1\\2sis"
+    ["([ti])a$"]="\\1um"
+    ["(n)ews$"]="\\1ews"
+    ["(h|bl)ouses$"]="\\1ouse"
+    ["(corpse)s$"]="\\1"
+    ["(us)es$"]="\\1"
+    ["(.*)s$"]="\\1" # Catch-all for simple plural forms
+  )
+
+  # Map of irregular plural to singular forms
+  declare -A irregular_patterns=(
+    ["moves"]="move"
+    ["feet"]="foot"
+    ["geese"]="goose"
+    ["sexes"]="sex"
+    ["children"]="child"
+    ["men"]="man"
+    ["teeth"]="tooth"
+    ["people"]="person"
+    ["classes"]="class" # Special case for "classes"
+  )
+
+  # Check for irregular forms
+  for plural in "${!irregular_patterns[@]}"; do
+    local pattern="^${plural}$"
+    if [[ "$word" =~ $pattern ]]; then
+      echo "${irregular_patterns[$plural]}"
+      return
+    fi
+  done
+
+  # Check for general patterns
+  for reg in "${!singular_patterns[@]}"; do
+    if [[ "$word" =~ $reg ]]; then
+      echo "$(echo "$word" | sed -E "s/$reg/${singular_patterns[$reg]}/")"
+      return
+    fi
+  done
+
+  # Return the original word if no patterns match
+  echo "$word"
+}
+
+# Function to normalize input by converting to lowercase and replacing separators with spaces
+function normalize_input() {
+  local input=$1
+  # Add spaces between camelCase or PascalCase words and convert separators to spaces
+  echo "$input" | sed -E 's/([a-z])([A-Z])/\1 \2/g' | tr '[:upper:]' '[:lower:]' | tr -s ' _-' ' '
+}
+
+# Function to transform a string to PascalCase
+to_pascal_case() {
+  local input=$(normalize_input "$1")
+  echo "$input" | awk '{for(i=1; i<=NF; i++) $i=toupper(substr($i,1,1)) substr($i,2)}1' OFS=''
+}
+
+# Function to transform a string to camelCase
+function to_camel_case() {
+  local pascal_case=$(to_pascal_case "$1")
+  local firstChar=$(echo "${pascal_case:0:1}" | tr '[:upper:]' '[:lower:]')
+  local rest="${pascal_case:1}"
+
+  echo "$firstChar$rest"
+}
+
+# Function to transform a string to snake_case
+function to_snake_case() {
+  local input=$(normalize_input "$1")
+  echo "$input" | tr ' ' '_'
+}
+
+# Function to transform a string to kebab-case
+function to_kebab_case() {
+  local input=$(normalize_input "$1")
+  echo "$input" | tr ' ' '-'
+}
+#---------------------------- END UTILITY FUNCTION -----------------------------
+
+# Usage display function
+function display_usage() {
+  echo -e "${CYAN}Usage:${RESET}"
+  echo -e "  $0 <option> <argument>"
+  echo
+  echo -e "${CYAN}Description:${RESET}"
+  echo -e "  This script provides tools for managing API resources and generating applications. Use the specified option to perform actions."
+  echo
+  echo -e "${CYAN}Options:${RESET}"
+  echo -e "  ${YELLOW}-n${RESET}  Generate a new full application. Requires the application name as an argument."
+  echo -e "  ${YELLOW}-d${RESET}  Generate a new domain directory with boilerplate files. Requires the domain path as an argument."
+  echo
+  echo -e "${CYAN}Parameters:${RESET}"
+  echo -e "  ${YELLOW}<app-name>${RESET} \t The name of the new application to generate."
+  echo -e "  ${YELLOW}<domain-path>${RESET}  The filesystem path to the domain directory."
+  # echo -e "\t\t For example: ${YELLOW}src/domains/users${RESET}, where 'users' is the domain name."
+  echo
+  echo -e "${CYAN}Examples:${RESET}"
+  echo -e "  $0 -n ${YELLOW}my-app${RESET}"
+  echo -e "  $0 -d ${YELLOW}src/domains/users${RESET}"
+  echo
+  exit 1
+}
+
 # Function to check if a file contains a specific text
 function file_contains_text() {
   local filename="$1"
@@ -83,11 +268,11 @@ function populate_index() {
 
   if [ $? -eq 0 ]; then
     {
-      echo "export * from './${domain}.controller.js';"
-      echo "export * from './${domain}.model.js';"
-      echo "export * from './${domain}.routes.js';"
-      echo "export * from './${domain}.schema.js';"
-      echo "export * from './${domain}.validation.js';"
+      echo "export * from './${domain}.controller.js'"
+      echo "export * from './${domain}.model.js'"
+      echo "export * from './${domain}.routes.js'"
+      echo "export * from './${domain}.schema.js'"
+      echo "export * from './${domain}.validation.js'"
     } >"$path"
   fi
 }
@@ -104,83 +289,84 @@ function populate_controller() {
       echo "import { baseController } from '../../common/index.js'"
       echo "import { model } from './${domain}.model.js'"
       echo ""
-      echo "export const controller = baseController(model);"
+      echo "export const controller = baseController(model)"
     } >"$filename"
   fi
 }
 
 function populate_model() {
   local path="$1"
-  local domain="$2"
-  local filename="$path/${domain}.model.js"
+  local domain=$(to_camel_case "$2")
+  local filename="$path/$2.model.js"
 
   create_file "$filename"
 
   if [ $? -eq 0 ]; then
     {
-      echo "import { baseModel } from '../../common/index.js';"
-      echo "import { ${domain} } from './${domain}.schema.js';"
+      echo "import { baseModel } from '../../common/index.js'"
+      echo "import { ${domain} } from './$2.schema.js'"
       echo ""
-      echo "export const model = baseModel(${domain});"
+      echo "export const model = baseModel(${domain})"
     } >"$filename"
   fi
 }
 
 function populate_routes() {
   local path="$1"
-  local domain="$2"
-  local filename="$path/${domain}.routes.js"
-  local route_path="./${domain}/${domain}.routes.js"
-  local domain_schema_name
+  local domain=$(to_camel_case "$2")
+  local filename="$path/$2.routes.js"
+  local route_path="./$2/$2.routes.js"
+  local schema_name
   local routes_filename
+  local endpoint=$(to_kebab_case $2)
 
   routes_filename="$(dirname "${path}")/routes.js"
-  domain_schema_name=$(capitalize "$domain")
+  schema_name=$(to_pascal_case $(capitalize $(singularize "$2")))
 
   create_file "$filename"
 
   if [ $? -eq 0 ]; then
     {
-      echo " import { controller } from './${domain}.controller.js'"
-      echo " import { validations } from './${domain}.validation.js'"
+      echo "import { controller } from './${2}.controller.js'"
+      echo "import { validations } from './${2}.validation.js'"
       echo ""
-      echo " export const routes = async (app) => {"
-      echo "   app.post("
-      echo "     '/${domain}',"
-      echo "     { schema: { ...validations.create, tags: ['${domain_schema_name}'] } },"
-      echo "     controller.create"
-      echo "   )"
-      echo " "
-      echo "   app.get("
-      echo "     '/${domain}',"
-      echo "     { schema: { ...validations.getAll, tags: ['${domain_schema_name}'] } },"
-      echo "     controller.getAll"
-      echo "   )"
+      echo "export const ${domain}Routes = async (app) => {"
+      echo "  app.post("
+      echo "    '/${endpoint}',"
+      echo "    { schema: { ...validations.create, tags: ['${schema_name}'] } },"
+      echo "    controller.create"
+      echo "  )"
       echo ""
-      echo "   app.get("
-      echo "     '/${domain}/:id',"
-      echo "     { schema: { ...validations.getById, tags: ['${domain_schema_name}'] } },"
-      echo "     controller.getById"
-      echo "   )"
+      echo "  app.get("
+      echo "    '/${endpoint}',"
+      echo "    { schema: { ...validations.getAll, tags: ['${schema_name}'] } },"
+      echo "    controller.getAll"
+      echo "  )"
       echo ""
-      echo "   app.delete("
-      echo "     '/${domain}/:id',"
-      echo "     { schema: { ...validations.delete, tags: ['${domain_schema_name}'] } },"
-      echo "     controller.deleteById"
-      echo "   )"
-      echo " "
-      echo "   app.patch("
-      echo "     '/${domain}/:id',"
-      echo "     { schema: { ...validations.patch, tags: ['${domain_schema_name}'] } },"
-      echo "     controller.patch"
-      echo "   )"
+      echo "  app.get("
+      echo "    '/${endpoint}/:id',"
+      echo "    { schema: { ...validations.getById, tags: ['${schema_name}'] } },"
+      echo "    controller.getById"
+      echo "  )"
       echo ""
-      echo "   app.put("
-      echo "     '/${domain}/:id',"
-      echo "     { schema: { ...validations.put, tags: ['${domain_schema_name}'] } },"
-      echo "     controller.put"
-      echo "   )"
-      echo " }"
+      echo "  app.delete("
+      echo "    '/${endpoint}/:id',"
+      echo "    { schema: { ...validations.delete, tags: ['${schema_name}'] } },"
+      echo "    controller.deleteById"
+      echo "  )"
+      echo ""
+      echo "  app.patch("
+      echo "    '/${endpoint}/:id',"
+      echo "    { schema: { ...validations.patch, tags: ['${schema_name}'] } },"
+      echo "    controller.patch"
+      echo "  )"
+      echo ""
+      echo "  app.put("
+      echo "    '/${endpoint}/:id',"
+      echo "    { schema: { ...validations.put, tags: ['${schema_name}'] } },"
+      echo "    controller.update"
+      echo "  )"
+      echo "}"
     } >"$filename"
   fi
 
@@ -196,15 +382,14 @@ function populate_routes() {
 # TODO: create an option to define the database driver (MySQL, Postgres, etc)
 function populate_schema() {
   local path="$1"
-  local domain="$2"
-  local filename="$path/${domain}.schema.js"
-  local schema_path="./${domain}/${domain}.schema.js"
-  local domain_schema_name
+  local domain=$(to_camel_case "$2")
+  local filename="$path/$2.schema.js"
+  local schema_path="./$2/$2.schema.js"
+  local schema_name
   local schemas_filename
 
   schemas_filename="$(dirname "${path}")/schemas.js"
-  # domain_schema_name=$(capitalize "$domain")
-  domain_schema_name=$(singularize $(capitalize "$domain"))
+  schema_name=$(to_pascal_case $(capitalize $(singularize "$2")))
 
   create_file "$filename"
 
@@ -222,7 +407,7 @@ function populate_schema() {
       echo "import { pick } from '../../common/schema/pick.js'"
       echo "import { registerSchema } from '../../common/schema/registry.js'"
       echo ""
-      echo "export const ${domain} = pgTable('${domain}', {"
+      echo "export const ${domain} = pgTable('$(to_snake_case "$schema_name")', {"
       echo "  id: uuid('id').primaryKey().defaultRandom().notNull(),"
       echo "  created_at: timestamp('created_at', { precision: 6, withTimezone: true })"
       echo "    .defaultNow()"
@@ -232,25 +417,22 @@ function populate_schema() {
       echo "    .notNull()"
       echo "})"
       echo ""
-      echo "export const Select${domain_schema_name}Schema = partial(omit("
-      echo "  createSelectSchema(${domain_schema_name}),"
-      echo "  ['password']"
-      echo "))"
+      echo "const selectSchema = createSelectSchema(${domain})"
       echo ""
-      echo "export const Create${domain_schema_name}Schema = omit(Select${domain_schema_name}Schema, ["
+      echo "export const Select${schema_name}Schema = partial(selectSchema)"
+      echo ""
+      echo "export const Create${schema_name}Schema = omit(selectSchema, ["
       echo "  'id',"
       echo "  'created_at',"
       echo "  'updated_at'"
       echo "])"
       echo ""
-      echo "const ${domain_schema_name}Schema = omit(Select${domain_schema_name}Schema, ["
-      echo "  'password'"
-      echo "])"
+      echo "const ${schema_name}Schema = Select${schema_name}Schema"
       echo ""
-      echo "export const Id${domain_schema_name}Schema = pick(Select${domain_schema_name}Schema, ['id'])"
-      echo "export const Update${domain_schema_name}Schema = partial(Create${domain_schema_name}Schema)"
+      echo "export const Id${schema_name}Schema = pick(Select${schema_name}Schema, ['id'])"
+      echo "export const Update${schema_name}Schema = partial(Create${schema_name}Schema)"
       echo ""
-      echo "registerSchema('${domain}', '${domain_schema_name}', ${domain_schema_name}Schema)"
+      echo "registerSchema('${domain}', '${schema_name}', ${schema_name}Schema)"
     } >"$filename"
   fi
 
@@ -266,10 +448,10 @@ function populate_schema() {
 function populate_validation() {
   local path="$1"
   local domain="$2"
-  local filename="$path/${domain}.validation.js"
-  local domain_schema_name
+  local filename="$path/$2.validation.js"
+  local schema_name
 
-  domain_schema_name=$(singularize $(capitalize "$domain"))
+  schema_name=$(to_pascal_case $(capitalize $(singularize "$2")))
 
   create_file "$filename"
 
@@ -284,49 +466,49 @@ function populate_validation() {
       echo "  createResponseSchema"
       echo "} from '../../common/index.js'"
       echo "import {"
-      echo "  Create${domain_schema_name}Schema,"
-      echo "  Id${domain_schema_name}Schema,"
-      echo "  Update${domain_schema_name}Schema,"
-      echo "  Select${domain_schema_name}Schema"
+      echo "  Create${schema_name}Schema,"
+      echo "  Id${schema_name}Schema,"
+      echo "  Update${schema_name}Schema,"
+      echo "  Select${schema_name}Schema"
       echo "} from './index.js'"
       echo ""
       echo "export const validations = {"
       echo "  // POST /${domain}"
       echo "  create: {"
-      echo "    [REQUEST_SEGMENTS.BODY]: Create${domain_schema_name}Schema,"
-      echo "    [REQUEST_SEGMENTS.RESPONSE]: createResponseSchema({ \$ref: '${domain_schema_name}' })"
+      echo "    [REQUEST_SEGMENTS.BODY]: Create${schema_name}Schema,"
+      echo "    [REQUEST_SEGMENTS.RESPONSE]: createResponseSchema({ \$ref: '${schema_name}' })"
       echo "  },"
       echo ""
       echo "  // DELETE /${domain}/:id"
       echo "  delete: {"
-      echo "    [REQUEST_SEGMENTS.PARAMS]: Id${domain_schema_name}Schema,"
+      echo "    [REQUEST_SEGMENTS.PARAMS]: Id${schema_name}Schema,"
       echo "    [REQUEST_SEGMENTS.RESPONSE]: createDeleteByIdResponseSchema()"
       echo "  },"
       echo ""
       echo "  // GET /${domain}"
       echo "  getAll: {"
       echo "    [REQUEST_SEGMENTS.QUERY]: createQuerySchema(),"
-      echo "    [REQUEST_SEGMENTS.RESPONSE]: createAllResponseSchema(Select${domain_schema_name}Schema)"
+      echo "    [REQUEST_SEGMENTS.RESPONSE]: createAllResponseSchema(Select${schema_name}Schema)"
       echo "  },"
       echo ""
       echo "  // GET /${domain}/:id"
       echo "  getById: {"
-      echo "    [REQUEST_SEGMENTS.PARAMS]: Id${domain_schema_name}Schema,"
-      echo "    [REQUEST_SEGMENTS.RESPONSE]: createByIdResponseSchema({ \$ref: '${domain_schema_name}' })"
+      echo "    [REQUEST_SEGMENTS.PARAMS]: Id${schema_name}Schema,"
+      echo "    [REQUEST_SEGMENTS.RESPONSE]: createByIdResponseSchema({ \$ref: '${schema_name}' })"
       echo "  },"
       echo ""
       echo "  // PATCH /${domain}/:id"
       echo "  patch: {"
-      echo "    [REQUEST_SEGMENTS.PARAMS]: Id${domain_schema_name}Schema,"
-      echo "    [REQUEST_SEGMENTS.BODY]: Update${domain_schema_name}Schema,"
-      echo "    [REQUEST_SEGMENTS.RESPONSE]: createByIdResponseSchema({ \$ref: '${domain_schema_name}' })"
+      echo "    [REQUEST_SEGMENTS.PARAMS]: Id${schema_name}Schema,"
+      echo "    [REQUEST_SEGMENTS.BODY]: Update${schema_name}Schema,"
+      echo "    [REQUEST_SEGMENTS.RESPONSE]: createByIdResponseSchema({ \$ref: '${schema_name}' })"
       echo "  },"
       echo ""
       echo "  // PUT /${domain}/:id"
       echo "  put: {"
-      echo "    [REQUEST_SEGMENTS.PARAMS]: Id${domain_schema_name}Schema,"
-      echo "    [REQUEST_SEGMENTS.BODY]: Create${domain_schema_name}Schema,"
-      echo "    [REQUEST_SEGMENTS.RESPONSE]: createByIdResponseSchema({ \$ref: '${domain_schema_name}' })"
+      echo "    [REQUEST_SEGMENTS.PARAMS]: Id${schema_name}Schema,"
+      echo "    [REQUEST_SEGMENTS.BODY]: Create${schema_name}Schema,"
+      echo "    [REQUEST_SEGMENTS.RESPONSE]: createByIdResponseSchema({ \$ref: '${schema_name}' })"
       echo "  }"
       echo "}"
     } >"$filename"
@@ -363,7 +545,7 @@ function generate_domain() {
   local domain_path="$1"
   local domain_name
 
-  domain_name=$(basename "$domain_path")
+  domain_name=$(basename $(to_kebab_case "$domain_path"))
 
   # Check if the directory exists, create if not
   if [ ! -d "$domain_path" ]; then
@@ -378,92 +560,6 @@ function generate_domain() {
 
   echo
   echo -e "${GREEN}All files generated successfully in $domain_path.${RESET}"
-}
-
-# Utility functions
-# Function to capitalize the first letter of a string
-function capitalize() {
-  echo "${1^}"
-}
-
-pluralize() {
-  local word="$1"
-  local count="${2:-2}" # Default to plural if count is not 1
-
-  if [[ $count -eq 1 ]]; then
-    # If count is 1, return the word as-is
-    echo "$word"
-    return
-  fi
-
-  # Irregular singular to plural mappings
-  case "$word" in
-  man) echo "men" ;;
-  woman) echo "women" ;;
-  child) echo "children" ;;
-  foot) echo "feet" ;;
-  tooth) echo "teeth" ;;
-  goose) echo "geese" ;;
-  mouse) echo "mice" ;;
-  ox) echo "oxen" ;;
-  datum) echo "data" ;;
-  person) echo "people" ;;
-  *) # General pluralization rules
-    if [[ "$word" =~ [sxz]$ ]] || [[ "$word" =~ [cs]h$ ]]; then
-      # Words ending in -s, -x, -z, -sh, -ch -> add -es
-      echo "${word}es"
-    elif [[ "$word" =~ [aeiou]y$ ]]; then
-      # Words ending in vowel + y -> add -s
-      echo "${word}s"
-    elif [[ "$word" =~ y$ ]]; then
-      # Words ending in consonant + y -> replace -y with -ies
-      echo "${word%y}ies"
-    elif [[ "$word" =~ f$ ]]; then
-      # Words ending in -f -> replace with -ves (e.g., wolf -> wolves)
-      echo "${word%f}ves"
-    elif [[ "$word" =~ fe$ ]]; then
-      # Words ending in -fe -> replace with -ves (e.g., knife -> knives)
-      echo "${word%fe}ves"
-    else
-      # Default: Add -s
-      echo "${word}s"
-    fi
-    ;;
-  esac
-}
-
-singularize() {
-    local word="$1"
-
-    # Irregular plural to singular mappings
-    case "$word" in
-        men) echo "man" ;;
-        women) echo "woman" ;;
-        children) echo "child" ;;
-        feet) echo "foot" ;;
-        teeth) echo "tooth" ;;
-        geese) echo "goose" ;;
-        mice) echo "mouse" ;;
-        oxen) echo "ox" ;;
-        data) echo "datum" ;;
-        people) echo "person" ;;
-        *) # General singularization rules
-            if [[ "$word" =~ ies$ ]]; then
-                # Words ending in -ies -> replace with -y
-                echo "${word%ies}y"
-            elif [[ "$word" =~ (ches|shes|xes|zes|ses)$ ]]; then
-                # Words ending in -ches, -shes, -xes, -zes, -ses -> remove -es
-                echo "${word%es}"
-            elif [[ "$word" =~ s$ ]] || ! [[ "$word" =~ es$ ]]; then
-                # Words ending in -s but not -es -> remove -s
-                echo "${word%s}"
-            else
-                # If no rule matches, return the word as-is
-                echo "If no rule matches, return the word as-is"
-                echo "$word"
-            fi
-            ;;
-    esac
 }
 
 # Parse options and arguments
