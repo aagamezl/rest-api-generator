@@ -1,0 +1,5 @@
+export * from './course-category.controller.js'
+export * from './course-category.model.js'
+export * from './course-category.routes.js'
+export * from './course-category.schema.js'
+export * from './course-category.validation.js'

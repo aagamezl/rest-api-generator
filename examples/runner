@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# Check if the file is provided and exists
+if [[ $# -ne 1 || ! -f $1 ]]; then
+  echo "Usage: $0 <test_script.sh>"
+  exit 1
+fi
+
+test_script="$1"
+
+echo "Executing: $test_script"
+echo
+
+# Source the test script to load its functions
+source "$test_script"
+
+# Extract all functions starting with 'test' from the test script
+test_functions=$(grep -Eo '^\s*test[a-zA-Z0-9_]*\s*\(\)' "$test_script" | sed 's/()//')
+
+passed=0
+# Execute each test function
+for func in $test_functions; do
+  echo "Executing $func..."
+
+  result=$($func)
+  passed=$((passed + 1))
+
+  echo "Result: $result"
+  echo "Passed: $passed"
+
+  echo "$func executed successfully."
+  echo
+done

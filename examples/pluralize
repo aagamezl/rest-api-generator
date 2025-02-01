@@ -1,57 +1,109 @@
 #!/bin/bash
 
-pluralize() {
-  local word="$1"
-  local count="${2:-2}" # Default to plural if count is not 1
+function pluralize() {
+    local word="$1"
 
-  if [[ $count -eq 1 ]]; then
-    # If count is 1, return the word as-is
+    # Map of irregular singular to plural forms
+    declare -A irregular_patterns=(
+        ["move"]="moves"
+        ["foot"]="feet"
+        ["goose"]="geese"
+        ["sex"]="sexes"
+        ["child"]="children"
+        ["man"]="men"
+        ["tooth"]="teeth"
+        ["person"]="people"
+        ["class"]="classes" # Ensure "class" is correctly pluralized
+    )
+
+    # Map of regular patterns for pluralization
+    declare -A plural_patterns=(
+        ["(quiz)$"]="\\1zes"
+        ["^(ox)$"]="\\1en"
+        ["([m|l])ouse$"]="\\1ice"
+        ["(matr|vert|ind)ix|ex$"]="\\1ices"
+        ["(x|ch|ss|sh)$"]="\\1es"
+        ["([^aeiouy]|qu)y$"]="\\1ies"
+        ["(hive)$"]="\\1s"
+        ["(?:([^f])fe|([lr])f)$"]="\\1\\2ves"
+        ["(shea|lea|loa|thie)f$"]="\\1ves"
+        ["sis$"]="ses"
+        ["([ti])um$"]="\\1a"
+        ["(tomat|potat|ech|her|vet)o$"]="\\1oes"
+        ["(bu)s$"]="\\1ses"
+        ["(alias)$"]="\\1es"
+        ["(octop)us$"]="\\1i"
+        ["(ax|test)is$"]="\\1es"
+        ["(us)$"]="\\1es"
+        ["([^s]+)$"]="\\1s" # Catch-all for simple singular forms
+    )
+
+    # Uncountable nouns list
+    local -a uncountable=(
+        aircraft audio bison cattle chassis cod compensation coreopsis data deer
+        education emoji equipment evidence feedback firmware fish furniture gold
+        hardware hovercraft information jedi kin knowledge love metadata money moose
+        news nutrition offspring pike plankton pokemon police rain recommended related
+        rice salmon series sheep shrimp software spacecraft species sugar swine traffic
+        trout tuna wheat wood you
+    )
+
+    # Check if the word is uncountable
+    for uncountable_word in "${uncountable[@]}"; do
+        if [[ "${word,,}" == "$uncountable_word" ]]; then
+            echo "$word"
+            return
+        fi
+    done
+
+    # Check for irregular singular forms
+    for singular in "${!irregular_patterns[@]}"; do
+        local pattern="^${singular}$"
+        if [[ "$word" =~ $pattern ]]; then
+            echo "${irregular_patterns[$singular]}"
+            return
+        fi
+    done
+
+    # Check for general patterns
+    for reg in "${!plural_patterns[@]}"; do
+        if [[ "$word" =~ $reg ]]; then
+            echo "$(echo "$word" | sed -E "s/$reg/${plural_patterns[$reg]}/")"
+            return
+        fi
+    done
+
+    # Return the original word if no patterns match
     echo "$word"
-    return
-  fi
-
-  # Irregular singular to plural mappings
-  case "$word" in
-  man) echo "men" ;;
-  woman) echo "women" ;;
-  child) echo "children" ;;
-  foot) echo "feet" ;;
-  tooth) echo "teeth" ;;
-  goose) echo "geese" ;;
-  mouse) echo "mice" ;;
-  ox) echo "oxen" ;;
-  datum) echo "data" ;;
-  person) echo "people" ;;
-  *) # General pluralization rules
-    if [[ "$word" =~ [sxz]$ ]] || [[ "$word" =~ [cs]h$ ]]; then
-      # Words ending in -s, -x, -z, -sh, -ch -> add -es
-      echo "${word}es"
-    elif [[ "$word" =~ [aeiou]y$ ]]; then
-      # Words ending in vowel + y -> add -s
-      echo "${word}s"
-    elif [[ "$word" =~ y$ ]]; then
-      # Words ending in consonant + y -> replace -y with -ies
-      echo "${word%y}ies"
-    elif [[ "$word" =~ f$ ]]; then
-      # Words ending in -f -> replace with -ves (e.g., wolf -> wolves)
-      echo "${word%f}ves"
-    elif [[ "$word" =~ fe$ ]]; then
-      # Words ending in -fe -> replace with -ves (e.g., knife -> knives)
-      echo "${word%fe}ves"
-    else
-      # Default: Add -s
-      echo "${word}s"
-    fi
-    ;;
-  esac
 }
 
-# Usage examples:
-echo "$(pluralize "fox")"     # foxes
-echo "$(pluralize "baby")"    # babies
+# echo "$(pluralize "quiz")"         # quizzes
+# echo "$(pluralize "ox")"           # oxen
+# echo "$(pluralize "mouse")"        # mice
+# echo "$(pluralize "matrix")"       # matrices
+# echo "$(pluralize "bus")"          # buses
+# echo "$(pluralize "leaf")"         # leaves
+# echo "$(pluralize "series")"       # series
+# echo "$(pluralize "species")"      # species
+# echo "$(pluralize "child")"        # children
+# echo "$(pluralize "foot")"         # feet
+# echo "$(pluralize "person")"       # people
+# echo "$(pluralize "class")"        # classes
+
+echo "$(pluralize "quiz")"    # quizes
+echo "$(pluralize "matrix")"  # matrixes
+echo "$(pluralize "index")"   # indexes
+echo "$(pluralize "ox")"      # oxes
+echo "$(pluralize "alias")"   # aliases
+echo "$(pluralize "octopus")" # octopuses
+echo "$(pluralize "movie")"   # movies
+echo "$(pluralize "wolf")"    # wolfs
 echo "$(pluralize "child")"   # children
-echo "$(pluralize "datum")"   # data
-echo "$(pluralize "wolf")"    # wolves
-echo "$(pluralize "knife")"   # knives
-echo "$(pluralize "profile")" # profiles
+echo "$(pluralize "man")"     # men
+echo "$(pluralize "goose")"   # geese
+echo "$(pluralize "foot")"    # feet
 echo "$(pluralize "person")"  # people
+echo "$(pluralize "user")"    # users
+echo "$(pluralize "profile")" # profiles
+echo "$(pluralize "course")"  # courses
+echo "$(pluralize "class")"   # classes

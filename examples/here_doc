@@ -1,0 +1,200 @@
+#!/bin/bash
+
+# readLines() {
+#   read greeting
+#   read name
+#   read result
+
+#   echo $greeting
+#   echo $name
+#   echo $result
+# }
+
+# Color codes for styling output
+FMT_RESET='\033[0m' # Color Off
+FMT_CYAN='\033[0;36m'
+FMT_YELLOW='\033[0;33m'
+FMT_GREEN='\033[0;32m'
+FMT_RED='\033[0;31m'
+
+function toBeEqual() {
+  local test_name=$1
+  local expected=$2
+  local received=$3
+
+  if [[ "$received" == "$expected" ]]; then
+    echo -e "    ${FMT_GREEN}✓${FMT_RESET} $test_name" >&2
+
+    # pass=$((pass + 1))
+
+    echo 1
+  else
+    echo -e "    ${FMT_RED}✗${FMT_RESET} $test_name (Expected: '$expected', Received: '$received')" >&2
+
+    # fail=$((fail + 1))
+
+    echo 0
+  fi
+}
+
+# Function to pluralize a given singular noun
+function pluralize() {
+  local word="$1"
+
+  if [[ $word =~ (foot|goose|man|tooth|woman)$ ]]; then
+    case $word in
+    foot) echo "feet" ;;
+    goose) echo "geese" ;;
+    man) echo "men" ;;
+    tooth) echo "teeth" ;;
+    woman) echo "women" ;;
+    esac
+  elif [[ $word =~ ^(child|die|louse|mouse|ox|person)$ ]]; then
+    case $word in
+    child) echo "children" ;;
+    die) echo "dice" ;;
+    louse) echo "lice" ;;
+    mouse) echo "mice" ;;
+    ox) echo "oxen" ;;
+    person) echo "people" ;;
+    esac
+  elif [[ $word =~ ^(carp|cod|mackerel|pike|plaice|salmon|squid|trout|cattle|deer|moose|sheep|swine|barracks|craft|aircraft|spacecraft|gallows|means|quid|series|species)$ ]]; then
+    echo "$word"
+  elif [[ $word =~ (.*[sxz]|.*(ch|sh))$ ]]; then
+    echo "${word}es"
+  elif [[ $word =~ (.*o)$ ]]; then
+    case $word in
+    hero | potato | tomato | torpedo) echo "${word}es" ;;
+    *) echo "${word}s" ;;
+    esac
+  elif [[ $word =~ (.*[^aeiou])y$ ]]; then
+    echo "${word%y}ies"
+  elif [[ $word =~ (.*[aeiou])y$ ]]; then
+    echo "${word}s"
+  elif [[ $word =~ (.*[f])$ ]] || [[ $word =~ (.*fe)$ ]]; then
+    case $word in
+    calf | half | knife | leaf | life | loaf | sheaf | shelf | thief | wife | wolf)
+      if [[ $word =~ .fe$ ]]; then
+        echo "${word%fe}ves"
+      else
+        echo "${word%f}ves"
+      fi
+      ;;
+
+    *) echo "${word}s" ;;
+    esac
+  elif [[ $word =~ (.*)$ ]]; then
+    echo "${word}s"
+  fi
+}
+
+# result=1
+describe() {
+  # lines=$(cat $2)
+
+  # this works
+  # local block=$(cat $2)
+  # result=($block)
+  # result=$((result + 1))
+  local describe_name=$1
+  local block=$2
+
+  local passed=0
+  local failed=0
+
+  echo -e "  ${FMT_YELLOW}$describe_name${FMT_RESET}"
+
+  # cat $block
+
+  echo $block
+
+  # while read -r line || [[ -n "$line" ]]; do
+  # while read line; do
+  # # while IFS= read -r line; do
+  #   # **This is the problem line**
+  #   # I can confirm that all the lines are being
+  #   #  read but echo displays nothing
+  #   result=($line)
+  #   # echo "Result: $result"
+  #   # total=$((total + result))
+  #   if [[ $result == 1 ]]; then
+  #     passed=$((passed + 1))
+  #   else
+  #     failed=$((failed + 1))
+  #   fi
+  #   # The line below will be printed 4 times as there are 4 lines in the file of interest
+  #   # echo "Test"
+  # done
+
+  echo
+
+  echo "Passed: $passed"
+  echo "Failed: $failed"
+  echo "Total: $((passed + failed))"
+}
+
+# toBeEqual() {
+#   result=$((result + 1))
+
+#   echo "called" >&2
+
+#   # read greeting
+#   # read name
+#   # read result
+
+#   # echo $greeting
+#   # echo $name
+#   # echo $result
+#   # echo "as"
+#   echo $result
+# }
+
+# describe <<TEST
+#   $(toBeEqual)
+#   $(toBeEqual)
+#   $(toBeEqual)
+#   $(toBeEqual)
+#   $(toBeEqual)
+#   $(toBeEqual)
+# TEST
+# $(toBeEqual "dress" "$(pluralize dress)" "dresses")
+# $(toBeEqual "dress" "$(pluralize dress)" "dresses1")
+
+# describe "Nouns ending in -ss, -sh, -ch, -x, -o." <<TEST
+#   $(toBeEqual "dress" "$(pluralize dress)" "dresses")
+#   $(toBeEqual "dish" "$(pluralize dish)" "dishes")
+#   $(toBeEqual "match" "$(pluralize match)" "matches")
+#   $(toBeEqual "box" "$(pluralize box)" "boxes")
+#   $(toBeEqual "hero" "$(pluralize hero)" "heroes")
+#   $(toBeEqual "potato" "$(pluralize potato)" "potatoes")
+#   $(toBeEqual "tomato" "$(pluralize tomato)" "tomatoes")
+#   $(toBeEqual "torpedo" "$(pluralize torpedo)" "torpedoes")
+#   $(toBeEqual "avocado" "$(pluralize avocado)" "avocados")
+#   $(toBeEqual "kimono" "$(pluralize kimono)" "kimonos")
+#   $(toBeEqual "piano" "$(pluralize piano)" "pianos")
+#   $(toBeEqual "zero" "$(pluralize zero)" "zeros")
+#   $(toBeEqual "kilo" "$(pluralize kilo)" "kilos")
+#   $(toBeEqual "photo" "$(pluralize photo)" "photos")
+#   $(toBeEqual "banjo" "$(pluralize banjo)" "banjos")
+#   $(toBeEqual "flamingo" "$(pluralize flamingo)" "flamingos")
+#   $(toBeEqual "ghetto" "$(pluralize ghetto)" "ghettos")
+#   $(toBeEqual "motto" "$(pluralize motto)" "motto1s")
+#   $(toBeEqual "tornado" "$(pluralize tornado)" "tornado1s")
+# TEST
+
+# function process_heredoc {
+#   echo "HEADER"
+
+#   while IFS= read -r line; do
+#     # Process the line here
+#     echo "Processing: $line"
+#   done
+# }
+
+# var1="Hello"
+# var2="World"
+# process_heredoc <<EOF
+# ${var1}, this is Line 1
+# ${var2}, this is Line 2
+# Line 3 with $(date)
+# EOF

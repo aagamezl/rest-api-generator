@@ -1,50 +1,92 @@
 #!/bin/bash
 
-#!/bin/bash
-
 singularize() {
     local word="$1"
 
-    # Irregular plural to singular mappings
-    case "$word" in
-        men) echo "man" ;;
-        women) echo "woman" ;;
-        children) echo "child" ;;
-        feet) echo "foot" ;;
-        teeth) echo "tooth" ;;
-        geese) echo "goose" ;;
-        mice) echo "mouse" ;;
-        oxen) echo "ox" ;;
-        data) echo "datum" ;;
-        people) echo "person" ;;
-        *) # General singularization rules
-            if [[ "$word" =~ ies$ ]]; then
-                # Words ending in -ies -> replace with -y
-                echo "${word%ies}y"
-            elif [[ "$word" =~ (ches|shes|xes|zes|ses)$ ]]; then
-                # Words ending in -ches, -shes, -xes, -zes, -ses -> remove -es
-                echo "${word%es}"
-            elif [[ "$word" =~ s$ ]] || ! [[ "$word" =~ es$ ]]; then
-                # Words ending in -s but not -es -> remove -s
-                echo "${word%s}"
-            else
-                # If no rule matches, return the word as-is
-                echo "If no rule matches, return the word as-is"
-                echo "$word"
-            fi
-            ;;
-    esac
+    # Map of regular patterns for singularization
+    declare -A singular_patterns=(
+        ["(quiz)zes$"]="\\1"
+        ["(matr)ices$"]="\\1ix"
+        ["(vert|ind)ices$"]="\\1ex"
+        ["^(ox)en$"]="\\1"
+        ["(alias)es$"]="\\1"
+        ["(octop|vir)i$"]="\\1us"
+        ["(cris|ax|test)es$"]="\\1is"
+        ["(shoe)s$"]="\\1"
+        ["(o)es$"]="\\1"
+        ["(bus)es$"]="\\1"
+        ["([m|l])ice$"]="\\1ouse"
+        ["(x|ch|ss|sh)es$"]="\\1"
+        ["(m)ovies$"]="\\1ovie"
+        ["(s)eries$"]="\\1eries"
+        ["([^aeiouy]|qu)ies$"]="\\1y"
+        ["([lr])ves$"]="\\1f"
+        ["(tive)s$"]="\\1"
+        ["(hive)s$"]="\\1"
+        ["(li|wi|kni)ves$"]="\\1fe"
+        ["(shea|loa|lea|thie)ves$"]="\\1f"
+        ["(^analy)ses$"]="\\1sis"
+        ["((a)naly|(b)a|(d)iagno|(p)arenthe|(p)rogno|(s)ynop|(t)he)ses$"]="\\1\\2sis"
+        ["([ti])a$"]="\\1um"
+        ["(n)ews$"]="\\1ews"
+        ["(h|bl)ouses$"]="\\1ouse"
+        ["(corpse)s$"]="\\1"
+        ["(us)es$"]="\\1"
+        ["(.*)s$"]="\\1" # Catch-all for simple plural forms
+    )
+
+    # Map of irregular plural to singular forms
+    declare -A irregular_patterns=(
+        ["moves"]="move"
+        ["feet"]="foot"
+        ["geese"]="goose"
+        ["sexes"]="sex"
+        ["children"]="child"
+        ["men"]="man"
+        ["teeth"]="tooth"
+        ["people"]="person"
+        ["classes"]="class" # Special case for "classes"
+    )
+
+    # Check for irregular forms
+    for plural in "${!irregular_patterns[@]}"; do
+        local pattern="^${plural}$"
+        if [[ "$word" =~ $pattern ]]; then
+            echo "${irregular_patterns[$plural]}"
+            return
+        fi
+    done
+
+    # Check for general patterns
+    for reg in "${!singular_patterns[@]}"; do
+        if [[ "$word" =~ $reg ]]; then
+            echo "$(echo "$word" | sed -E "s/$reg/${singular_patterns[$reg]}/")"
+            return
+        fi
+    done
+
+    # Return the original word if no patterns match
+    echo "$word"
 }
 
-# Usage examples:
-echo "$(singularize "foxes")"      # fox
-echo "$(singularize "babies")"     # baby
-echo "$(singularize "children")"   # child
-echo "$(singularize "data")"       # datum
-echo "$(singularize "cats")"       # cat
-echo "$(singularize "profiles")"   # profile
-echo "$(singularize "people")"     # person
+# Usage examples
 
+# Usage examples
+echo "$(singularize "quizzes")"    # quiz
+echo "$(singularize "matrices")"   # matrix
+echo "$(singularize "indices")"    # index
+echo "$(singularize "oxen")"       # ox
+echo "$(singularize "aliases")"    # alias
+echo "$(singularize "octopi")"     # octopus
+echo "$(singularize "movies")"     # movie
+echo "$(singularize "wolves")"     # wolf
+echo "$(singularize "children")"   # child
+echo "$(singularize "men")"        # man
+echo "$(singularize "geese")"      # goose
+echo "$(singularize "feet")"       # foot
+echo "$(singularize "people")"   # person
+echo "$(singularize "courses")"  # course
+echo "$(singularize "classes")"    # class
 
 word="$1"
 # echo $word

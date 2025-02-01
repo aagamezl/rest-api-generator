@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# Function to normalize input by converting to lowercase and replacing separators with spaces
+# normalize_input() {
+#   local input=$1
+#   echo "$input" | tr '[:upper:]' '[:lower:]' | tr -s ' _-' ' '
+# }
+normalize_input() {
+  local input=$1
+  # Add spaces between camelCase or PascalCase words and convert separators to spaces
+  echo "$input" | sed -E 's/([a-z])([A-Z])/\1 \2/g' | tr '[:upper:]' '[:lower:]' | tr -s ' _-' ' '
+}
+
+# Function to transform a string to PascalCase
+to_pascal_case() {
+  local input=$(normalize_input "$1")
+  echo "$input" | awk '{for(i=1; i<=NF; i++) $i=toupper(substr($i,1,1)) substr($i,2)}1' OFS=''
+}
+
+# Function to transform a string to camelCase
+to_camel_case() {
+  local pascal_case=$(to_pascal_case "$1")
+  local firstChar=$(echo "${pascal_case:0:1}" | tr '[:upper:]' '[:lower:]')
+  local rest="${pascal_case:1}"
+
+  echo "$firstChar$rest"
+}
+
+# Function to transform a string to snake_case
+to_snake_case() {
+  local input=$(normalize_input "$1")
+  echo "$input" | tr ' ' '_'
+}
+
+# Function to transform a string to kebab-case
+to_kebab_case() {
+  local input=$(normalize_input "$1")
+  echo "$input" | tr ' ' '-'
+}
+
+# Example usage
+input="class-review-second class_review second class review classReview"
+input="ClassReview"
+
+echo "Original: $input"
+# echo "PascalCase: $(to_pascal_case "$input")"
+# echo "camelCase: $(to_camel_case "$input")"
+echo "SnakeCase: $(to_snake_case "$input")"
+# echo "KebabCase: $(to_kebab_case "$input")"

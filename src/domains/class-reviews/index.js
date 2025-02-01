@@ -1,0 +1,5 @@
+export * from './class-reviews.controller.js'
+export * from './class-reviews.model.js'
+export * from './class-reviews.routes.js'
+export * from './class-reviews.schema.js'
+export * from './class-reviews.validation.js'

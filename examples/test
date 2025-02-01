@@ -1,0 +1,20 @@
+#!/bin/bash
+
+  test_pluralize() {
+  # echo "Running test_pluralize"
+  echo 1
+}
+
+test_to_camel_case() {
+  # echo "Running test_to_camel_case"
+  echo 1
+}
+
+test_to_pascal_case() {
+  # echo "Running test_to_camel_case"
+  echo 1
+}
+
+helper_function() {
+  echo "This is a helper function"
+}
