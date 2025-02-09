@@ -4,7 +4,8 @@ import { displayUsage, generateApplication, generateDomain } from './src/utils/i
 
 // Parse command-line arguments
 const args = process.argv.slice(2)
-// const args = ['-d', 'dist/src/domains/users']
+// const args = ['-d', 'app-test/src/domains/user-post']
+// const args = ['-n', 'app-test']
 
 if (args.length < 2) {
   displayUsage()
@@ -13,15 +14,20 @@ if (args.length < 2) {
 }
 
 const option = args[0]
-const argument = args[1]
+const parameter = args[1]
+
+console.log('cwd: %o', process.cwd())
+console.log('dirname: %o', import.meta.dirname)
 
 switch (option) {
   case '-d':
-    generateDomain(argument)
+    generateDomain(parameter)
 
     break
   case '-n':
-    generateApplication()
+    // console.log(name, process.cwd());
+
+    generateApplication(parameter, process.cwd(), import.meta.dirname)
 
     break
   default:

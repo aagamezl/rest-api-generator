@@ -1,5 +1,5 @@
-import { existsSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
+import { appendFileSync, existsSync, writeFileSync } from 'node:fs'
 
 import {
   createFile,
@@ -10,11 +10,11 @@ import {
 } from '../../utils/index.js'
 
 export const generateSchema = (dirPath, domain) => {
-  const schemaPath = join(dirPath, `${domain}.schema.js`)
+  const filename = join(dirPath, `${domain}.schema.js`)
 
-  createFile(schemaPath)
+  createFile(filename)
 
-  if (existsSync(schemaPath)) {
+  if (existsSync(filename)) {
     const content = [
       'import {',
       '  pgTable,',
@@ -28,7 +28,7 @@ export const generateSchema = (dirPath, domain) => {
       "import { pick } from '../../common/schema/pick.js'",
       "import { registerSchema } from '../../common/schema/registry.js'",
       '',
-      `export const ${toCamelCase(domain)} = pgTable('${toSnakeCase(toPascalCase(singularize(domain)))}', {`,
+      `export const ${toCamelCase(domain)} = pgTable('${toSnakeCase(domain)}', {`,
       "  id: uuid('id').primaryKey().defaultRandom().notNull(),",
       "  created_at: timestamp('created_at', { precision: 6, withTimezone: true })",
       '    .defaultNow()',
@@ -52,9 +52,15 @@ export const generateSchema = (dirPath, domain) => {
       `export const Id${toPascalCase(singularize(domain))}Schema = pick(Select${toPascalCase(singularize(domain))}Schema, ['id'])`,
       `export const Update${toPascalCase(singularize(domain))}Schema = partial(Create${toPascalCase(singularize(domain))}Schema)`,
       '',
-      `registerSchema('${toCamelCase(domain)}', '${toPascalCase(singularize(domain))}', ${toPascalCase(singularize(domain))}Schema)`
+      `registerSchema('${toCamelCase(domain)}', '${toPascalCase(singularize(domain))}', ${toPascalCase(singularize(domain))}Schema)`,
+      ''
     ]
 
-    writeFileSync(schemaPath, content.join('\n').trim())
+    writeFileSync(filename, content.join('\n').trim())
+
+    const schemasFilename = join(dirname(dirPath), 'schemas.js')
+    const schemaPath = join(`${domain}`, `${domain}.schema.js`)
+
+    appendFileSync(schemasFilename, `export * from './${schemaPath}'\n`)
   }
 }

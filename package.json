@@ -1,10 +1,10 @@
 {
-  "name": "rest-api-generator",
+  "name": "rest-flow",
   "version": "1.0.0",
   "description": "A Bash script for generating API resources and full applications with boilerplate files. The script is designed to simplify the process of setting up new domains or creating an entire application structure.",
   "type": "module",
   "bin": {
-    "rest-api-generator": "./index.js"
+    "rest-flow": "./index.js"
   },
   "directories": {
     "example": "examples"
@@ -27,5 +27,8 @@
     "ignore": [
       "dist"
     ]
+  },
+  "dependencies": {
+    "pluralize": "^8.0.0"
   }
 }

@@ -10,10 +10,11 @@ export const generateController = (dirPath, domain) => {
 
   if (existsSync(controllerPath)) {
     const content = [
-      'import { baseController } from \'../../common/index.js\';',
-      `import { model } from './${domain}.model.js';`,
+      'import { baseController } from \'../../common/index.js\'',
+      `import { model } from './${domain}.model.js'`,
       '',
-      'export const controller = baseController(model);'
+      'export const controller = baseController(model)',
+      ''
     ]
 
     writeFileSync(controllerPath, content.join('\n').trim())

@@ -13,7 +13,8 @@ export const generateModel = (dirPath, domain) => {
       'import { baseModel } from \'../../common/index.js\'',
       `import { ${toCamelCase(domain)} } from './${domain}.schema.js'`,
       '',
-      `export const model = baseModel(${toCamelCase(domain)})`
+      `export const model = baseModel(${toCamelCase(domain)})`,
+      ''
     ]
 
     writeFileSync(modelPath, content.join('\n').trim())

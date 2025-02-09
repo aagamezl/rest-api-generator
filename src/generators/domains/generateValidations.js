@@ -16,13 +16,13 @@ export const generateValidations = (dirPath, domain) => {
       '  createDeleteByIdResponseSchema,',
       '  createQuerySchema,',
       '  createResponseSchema',
-      "} from '../../common/index.js';",
+      "} from '../../common/index.js'",
       'import {',
       `  Create${toPascalCase(singularize(domain))}Schema,`,
       `  Id${toPascalCase(singularize(domain))}Schema,`,
       `  Update${toPascalCase(singularize(domain))}Schema,`,
       `  Select${toPascalCase(singularize(domain))}Schema`,
-      "} from './index.js';",
+      "} from './index.js'",
       '',
       'export const validations = {',
       `  // POST /${domain}`,
@@ -62,7 +62,8 @@ export const generateValidations = (dirPath, domain) => {
       `    [REQUEST_SEGMENTS.BODY]: Create${toPascalCase(singularize(domain))}Schema,`,
       `    [REQUEST_SEGMENTS.RESPONSE]: createByIdResponseSchema({ $ref: '${toPascalCase(singularize(domain))}' })`,
       '  }',
-      '};'
+      '}',
+      ''
     ].join('\n')
 
     writeFileSync(validationPath, content)

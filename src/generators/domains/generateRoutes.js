@@ -1,5 +1,5 @@
-import { join } from 'node:path'
-import { existsSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { appendFileSync, existsSync, writeFileSync } from 'node:fs'
 
 import { createFile } from '../../utils/fileSystem/createFile.js'
 import { singularize } from '../../utils/string/singularize.js'
@@ -14,11 +14,11 @@ import { toPascalCase } from '../../utils/string/toPascalCase.js'
  * @returns {void}
  */
 export const generateRoutes = (dirPath, domain) => {
-  const routesPath = join(dirPath, `${domain}.routes.js`)
+  const filename = join(dirPath, `${domain}.routes.js`)
 
-  createFile(routesPath)
+  createFile(filename)
 
-  if (existsSync(routesPath)) {
+  if (existsSync(filename)) {
     const content = [
       `import { controller } from './${domain}.controller.js'`,
       `import { validations } from './${domain}.validation.js'`,
@@ -59,9 +59,15 @@ export const generateRoutes = (dirPath, domain) => {
       `    { schema: { ...validations.put, tags: ['${toPascalCase(singularize(domain))}'] } },`,
       '    controller.update',
       '  )',
-      '}'
+      '}',
+      ''
     ]
 
-    writeFileSync(routesPath, content.join('\n').trim())
+    writeFileSync(filename, content.join('\n').trim())
+
+    const routesFilename = join(dirname(dirPath), 'routes.js')
+    const routesPath = join(`${domain}`, `${domain}.routes.js`)
+
+    appendFileSync(routesFilename, `export * from './${routesPath}'\n`)
   }
 }

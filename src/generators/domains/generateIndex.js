@@ -19,7 +19,8 @@ export const generateIndex = (dirPath, domain) => {
       `export * from './${domain}.model.js'`,
       `export * from './${domain}.routes.js'`,
       `export * from './${domain}.schema.js'`,
-      `export * from './${domain}.validation.js'`
+      `export * from './${domain}.validation.js'`,
+      ''
     ]
 
     writeFileSync(indexPath, content.join('\n').trim())
