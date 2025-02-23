@@ -1,5 +1,5 @@
 {
-  "name": "rest-flow",
+  "name": "rest-flow-old",
   "version": "1.0.0",
   "description": "A Bash script for generating API resources and full applications with boilerplate files. The script is designed to simplify the process of setting up new domains or creating an entire application structure.",
   "type": "module",
@@ -29,6 +29,7 @@
     ]
   },
   "dependencies": {
+    "@devnetic/utils": "^2.2.0",
     "pluralize": "^8.0.0"
   }
 }

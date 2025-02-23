@@ -1,11 +1,10 @@
 import { dirname, join } from 'node:path'
 import { appendFileSync, existsSync, writeFileSync } from 'node:fs'
 
+import { camelCase, kebabCase, pascalCase } from '@devnetic/utils'
+import pluralize from 'pluralize'
+
 import { createFile } from '../../utils/fileSystem/createFile.js'
-import { singularize } from '../../utils/string/singularize.js'
-import { toCamelCase } from '../../utils/string/toCamelCase.js'
-import { toKebabCase } from '../../utils/string/toKebabCase.js'
-import { toPascalCase } from '../../utils/string/toPascalCase.js'
 
 /**
  *
@@ -15,6 +14,8 @@ import { toPascalCase } from '../../utils/string/toPascalCase.js'
  */
 export const generateRoutes = (dirPath, domain) => {
   const filename = join(dirPath, `${domain}.routes.js`)
+  const schemaName = pascalCase(pluralize.singular(domain))
+  const endpointName = kebabCase(domain)
 
   createFile(filename)
 
@@ -23,47 +24,47 @@ export const generateRoutes = (dirPath, domain) => {
       `import { controller } from './${domain}.controller.js'`,
       `import { validations } from './${domain}.validation.js'`,
       '',
-      `export const ${toCamelCase(domain)}Routes = async (app) => {`,
+      `export const ${camelCase(domain)}Routes = async (app) => {`,
       '  app.post(',
-      `    '/${toKebabCase(domain)}',`,
-      `    { schema: { ...validations.create, tags: ['${toPascalCase(singularize(domain))}'] } },`,
+      `    '/${endpointName}',`,
+      `    { schema: { ...validations.create, tags: ['${schemaName}'] } },`,
       '    controller.create',
       '  )',
       '',
       '  app.get(',
-      `    '/${toKebabCase(domain)}',`,
-      `    { schema: { ...validations.getAll, tags: ['${toPascalCase(singularize(domain))}'] } },`,
+      `    '/${endpointName}',`,
+      `    { schema: { ...validations.getAll, tags: ['${schemaName}'] } },`,
       '    controller.getAll',
       '  )',
       '',
       '  app.get(',
-      `    '/${toKebabCase(domain)}/:id',`,
-      `    { schema: { ...validations.getById, tags: ['${toPascalCase(singularize(domain))}'] } },`,
+      `    '/${endpointName}/:id',`,
+      `    { schema: { ...validations.getById, tags: ['${schemaName}'] } },`,
       '    controller.getById',
       '  )',
       '',
       '  app.delete(',
-      `    '/${toKebabCase(domain)}/:id',`,
-      `    { schema: { ...validations.delete, tags: ['${toPascalCase(singularize(domain))}'] } },`,
+      `    '/${endpointName}/:id',`,
+      `    { schema: { ...validations.delete, tags: ['${schemaName}'] } },`,
       '    controller.deleteById',
       '  )',
       '',
       '  app.patch(',
-      `    '/${toKebabCase(domain)}/:id',`,
-      `    { schema: { ...validations.patch, tags: ['${toPascalCase(singularize(domain))}'] } },`,
+      `    '/${endpointName}/:id',`,
+      `    { schema: { ...validations.patch, tags: ['${schemaName}'] } },`,
       '    controller.patch',
       '  )',
       '',
       '  app.put(',
-      `    '/${toKebabCase(domain)}/:id',`,
-      `    { schema: { ...validations.put, tags: ['${toPascalCase(singularize(domain))}'] } },`,
+      `    '/${endpointName}/:id',`,
+      `    { schema: { ...validations.put, tags: ['${schemaName}'] } },`,
       '    controller.update',
       '  )',
       '}',
       ''
     ]
 
-    writeFileSync(filename, content.join('\n').trim())
+    writeFileSync(filename, content.join('\n'))
 
     const routesFilename = join(dirname(dirPath), 'routes.js')
     const routesPath = join(`${domain}`, `${domain}.routes.js`)

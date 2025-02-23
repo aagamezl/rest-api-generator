@@ -1,16 +1,15 @@
 import { dirname, join } from 'node:path'
 import { appendFileSync, existsSync, writeFileSync } from 'node:fs'
 
-import {
-  createFile,
-  singularize,
-  toCamelCase,
-  toPascalCase,
-  toSnakeCase
-} from '../../utils/index.js'
+import { camelCase, pascalCase, snakeCase } from '@devnetic/utils'
+import pluralize from 'pluralize'
+
+import { createFile } from '../../utils/index.js'
 
 export const generateSchema = (dirPath, domain) => {
   const filename = join(dirPath, `${domain}.schema.js`)
+  const domainName = camelCase(domain)
+  const schemaName = pascalCase(pluralize.singular(domain))
 
   createFile(filename)
 
@@ -28,7 +27,7 @@ export const generateSchema = (dirPath, domain) => {
       "import { pick } from '../../common/schema/pick.js'",
       "import { registerSchema } from '../../common/schema/registry.js'",
       '',
-      `export const ${toCamelCase(domain)} = pgTable('${toSnakeCase(domain)}', {`,
+      `export const ${domainName} = pgTable('${snakeCase(domain)}', {`,
       "  id: uuid('id').primaryKey().defaultRandom().notNull(),",
       "  created_at: timestamp('created_at', { precision: 6, withTimezone: true })",
       '    .defaultNow()',
@@ -38,25 +37,25 @@ export const generateSchema = (dirPath, domain) => {
       '    .notNull()',
       '})',
       '',
-      `const selectSchema = createSelectSchema(${toCamelCase(domain)})`,
+      `const selectSchema = createSelectSchema(${domainName})`,
       '',
-      `export const Select${toPascalCase(singularize(domain))}Schema = partial(selectSchema)`,
-      `export const Create${toPascalCase(singularize(domain))}Schema = omit(selectSchema, [`,
+      `export const Select${schemaName}Schema = partial(selectSchema)`,
+      `export const Create${schemaName}Schema = omit(selectSchema, [`,
       "  'id',",
       "  'created_at',",
       "  'updated_at'",
       '])',
       '',
-      `const ${toPascalCase(singularize(domain))}Schema = Select${toPascalCase(singularize(domain))}Schema`,
+      `const ${schemaName}Schema = Select${schemaName}Schema`,
       '',
-      `export const Id${toPascalCase(singularize(domain))}Schema = pick(Select${toPascalCase(singularize(domain))}Schema, ['id'])`,
-      `export const Update${toPascalCase(singularize(domain))}Schema = partial(Create${toPascalCase(singularize(domain))}Schema)`,
+      `export const Id${schemaName}Schema = pick(Select${schemaName}Schema, ['id'])`,
+      `export const Update${schemaName}Schema = partial(Create${schemaName}Schema)`,
       '',
-      `registerSchema('${toCamelCase(domain)}', '${toPascalCase(singularize(domain))}', ${toPascalCase(singularize(domain))}Schema)`,
+      `registerSchema('${domainName}', '${schemaName}', ${schemaName}Schema)`,
       ''
     ]
 
-    writeFileSync(filename, content.join('\n').trim())
+    writeFileSync(filename, content.join('\n'))
 
     const schemasFilename = join(dirname(dirPath), 'schemas.js')
     const schemaPath = join(`${domain}`, `${domain}.schema.js`)
